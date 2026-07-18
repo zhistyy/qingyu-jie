@@ -1,0 +1,24 @@
+# Environment variables
+.env
+
+# Build artifacts
+dist/
+*.apk
+*.aab
+
+# Dev environment
+env/
+
+# Logs
+*.log
+
+# Dependencies
+node_modules/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

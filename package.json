@@ -1,0 +1,18 @@
+{
+  "name": "to-rpg",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.4.0",
+    "@capacitor/cli": "^8.4.0",
+    "@capacitor/core": "^8.4.0",
+    "vite": "^8.0.16"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3"
+  }
+}

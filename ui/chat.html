@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>青云界 · 传书</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .chat-layout { display: flex; height: 100vh; overflow: hidden; background: #f5f2eb; }
+
+    /* ═══ 左侧 ─ 人物录 ═══ */
+    .chat-sidebar {
+      width: 270px; min-width: 220px; background: #faf8f3;
+      border-right: 1px solid #e0d8c8; display: flex; flex-direction: column; overflow: hidden;
+    }
+    .chat-sidebar-head {
+      padding: 14px 16px 10px; flex-shrink: 0;
+    }
+    .chat-back-btn {
+      display: inline-block; margin-bottom: 8px;
+      font-size: .7rem; color: #3a8a6a; text-decoration: none;
+      font-weight: 600; transition: color .15s;
+    }
+    .chat-back-btn:hover { color: #2a7a5a; }
+    .chat-sidebar-head h2 {
+      font-size: 1rem; color: #2a7a6a; font-weight: 700; letter-spacing: .05em;
+      margin-bottom: 8px;
+    }
+    .chat-sidebar-head .subtitle { font-size: .65rem; color: #a0a090; margin-top: -4px; }
+    .chat-search { padding: 0 16px 10px; flex-shrink: 0; }
+    .chat-search input {
+      width: 100%; padding: 7px 12px; border-radius: 6px;
+      border: 1px solid #d8d0c0; background: #fff; color: #3a3228;
+      font-size: .75rem; outline: none; font-family: inherit; transition: border-color .2s;
+    }
+    .chat-search input:focus { border-color: #4ac4a8; }
+    .chat-search input::placeholder { color: #c0b8a8; }
+    .chat-contacts { flex: 1; overflow-y: auto; }
+    .chat-contact {
+      display: flex; align-items: center; gap: 10px; padding: 10px 16px;
+      cursor: pointer; border-bottom: 1px solid #f0ebe0; transition: background .15s;
+      position: relative;
+    }
+    .chat-contact:hover { background: #f0faf4; }
+    .chat-contact.active { background: #e8f4ee; }
+    .chat-contact.active::before {
+      content: ''; position: absolute; left: 0; top: 8px; bottom: 8px;
+      width: 3px; background: #4ac4a8; border-radius: 0 2px 2px 0;
+    }
+    .chat-avatar {
+      width: 38px; height: 38px; border-radius: 6px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .9rem; font-weight: 700; letter-spacing: .02em;
+      background: linear-gradient(135deg, #d4e8dc, #c0dcc8);
+      color: #2a6a5a; box-shadow: 0 1px 3px #00000008;
+    }
+    .chat-contact-info { flex: 1; min-width: 0; }
+    .chat-contact-name { font-size: .82rem; font-weight: 600; color: #3a3228; }
+    .chat-contact-title { font-size: .65rem; color: #8a8070; margin-top: 2px; }
+    .chat-contact-loc { font-size: .6rem; color: #6a8a6a; margin-top: 1px; }
+    .chat-status {
+      width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; opacity: .7;
+    }
+    .chat-status.active { background: #4ac4a8; }
+    .chat-status.dormant { background: #c0b8a8; }
+    .chat-status.alert { background: #e0a840; }
+
+    /* ═══ 右侧 ─ 对话区 ═══ */
+    .chat-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .chat-topbar {
+      padding: 10px 20px; border-bottom: 1px solid #e0d8c8;
+      background: linear-gradient(180deg, #ffffff, #faf8f3); flex-shrink: 0;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .chat-topbar .chat-avatar { width: 36px; height: 36px; border-radius: 6px; }
+    .chat-topbar .name { font-size: .9rem; font-weight: 700; color: #3a3228; }
+    .chat-topbar .identity { font-size: .7rem; color: #8a8070; }
+
+    /* NPC 详情卡片 */
+    .chat-profile {
+      padding: 12px 20px; background: #faf8f3; border-bottom: 1px solid #e8e0d0;
+      display: none; font-size: .72rem; line-height: 1.8; color: #5a4a3a;
+    }
+    .chat-profile.show { display: block; }
+    .chat-profile .row { display: flex; margin-bottom: 3px; }
+    .chat-profile .lbl { color: #2a7a6a; font-weight: 600; min-width: 60px; flex-shrink: 0; }
+    .chat-profile .val { color: #5a4a3a; }
+
+    /* 消息区 */
+    .chat-msgs {
+      flex: 1; overflow-y: auto; padding: 20px;
+      display: flex; flex-direction: column; gap: 14px;
+      background: linear-gradient(180deg, #fdfcf8 0%, #f8f5ef 100%);
+    }
+    .chat-msgs::-webkit-scrollbar { width: 4px; }
+    .chat-msgs::-webkit-scrollbar-track { background: transparent; }
+    .chat-msgs::-webkit-scrollbar-thumb { background: #d0c8b8; border-radius: 2px; }
+
+    .chat-msg {
+      max-width: 68%; padding: 10px 16px; border-radius: 12px;
+      font-size: .78rem; line-height: 1.7; word-break: break-word; position: relative;
+    }
+    .chat-msg.npc {
+      align-self: flex-start; background: #fff; color: #3a3a2a;
+      border: 1px solid #e8e0d0; border-bottom-left-radius: 4px;
+      box-shadow: 0 1px 3px #00000006;
+    }
+    .chat-msg.player {
+      align-self: flex-end; background: #e8f4ee; color: #2a4a3a;
+      border: 1px solid #c8dcc8; border-bottom-right-radius: 4px;
+      box-shadow: 0 1px 3px #4ac4a808;
+    }
+    .chat-msg .time {
+      display: block; font-size: .58rem; color: #b0a090; margin-top: 4px;
+      text-align: right;
+    }
+    .chat-msg.npc .time { text-align: left; }
+
+    /* 空态 */
+    .chat-empty {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      justify-content: center; color: #c0b8a8;
+    }
+    .chat-empty .icon {
+      width: 64px; height: 64px; border-radius: 50%; background: #f0e8d8;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem; color: #b0a090; margin-bottom: 16px;
+    }
+    .chat-empty .text { font-size: .82rem; font-weight: 500; }
+    .chat-empty .hint { font-size: .65rem; margin-top: 6px; }
+
+    /* 输入区 */
+    .chat-input-row {
+      padding: 12px 20px; border-top: 1px solid #e0d8c8;
+      display: flex; gap: 10px; background: #fff; flex-shrink: 0;
+    }
+    .chat-input-row input {
+      flex: 1; padding: 10px 16px; border-radius: 8px;
+      border: 1px solid #d8d0c0; background: #faf8f3; color: #3a3228;
+      font-size: .78rem; outline: none; font-family: inherit;
+      transition: border-color .2s;
+    }
+    .chat-input-row input:focus { border-color: #4ac4a8; }
+    .chat-input-row input::placeholder { color: #c0b8a8; }
+    .chat-input-row button {
+      padding: 10px 24px; border-radius: 8px; border: none;
+      background: #3a8a6a; color: #fff; cursor: pointer; font-size: .78rem;
+      font-weight: 600; font-family: inherit; transition: background .15s; white-space: nowrap;
+    }
+    .chat-input-row button:hover { background: #2a7a5a; }
+    .chat-input-row button:disabled { background: #b0c8b8; cursor: not-allowed; }
+
+    .chat-loading {
+      display: none; align-items: center; gap: 8px; color: #8a8070;
+      padding: 6px 20px 2px; font-size: .7rem; flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+<div class="chat-layout">
+  <div class="chat-sidebar">
+    <div class="chat-sidebar-head">
+      <a href="game.html" class="chat-back-btn" title="返回游戏">← 返回</a>
+      <h2>人物录</h2>
+      <div class="subtitle">天下修士，尽在于此</div>
+    </div>
+    <div class="chat-search">
+      <input type="text" id="search-input" placeholder="搜索姓名或身份..." oninput="filterContacts()">
+    </div>
+    <div class="chat-contacts" id="contact-list"></div>
+  </div>
+
+  <div class="chat-main" id="chat-main">
+    <div class="chat-topbar" id="chat-topbar" style="display:none">
+      <div class="chat-avatar" id="chat-avatar"></div>
+      <div>
+        <div class="name" id="chat-name"></div>
+        <div class="identity" id="chat-title"></div>
+      </div>
+    </div>
+    <div class="chat-profile" id="chat-profile"></div>
+    <div class="chat-msgs" id="chat-msgs">
+      <div class="chat-empty">
+        <div class="icon">青云</div>
+        <div class="text">择一人，叙一段缘</div>
+        <div class="hint">左侧人物录中选择一位修士</div>
+      </div>
+    </div>
+    <div class="chat-loading" id="chat-loading">
+      <div class="spinner"></div><span>落笔中...</span>
+    </div>
+    <div class="chat-input-row" id="chat-input-row" style="display:none">
+      <input type="text" id="chat-input" placeholder="说些什么..." onkeydown="if(event.key==='Enter')sendChat()">
+      <button id="btn-send" onclick="sendChat()">传书</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="./chat.js"></script>
+</body>
+</html>

@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>青云界 · API 调用日志</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  /* ═══════════════════ API 日志独立页面 ═══════════════════ */
+  body {
+    overflow-y: auto;
+    height: auto;
+    min-height: 100vh;
+    background: linear-gradient(180deg, #faf8f4, #f5f2eb);
+  }
+
+  .api-log-page {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 20px 16px 40px;
+  }
+
+  /* ── 页头 ── */
+  .api-page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 0 10px;
+    border-bottom: 2px solid;
+    border-image: linear-gradient(90deg, transparent, #5aac9a, #4a9a8a, transparent) 1;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+
+  .api-page-title {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: #3a8a7a;
+    letter-spacing: 2px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .api-page-title::before {
+    content: '';
+    display: inline-block;
+    width: 16px; height: 16px;
+    background: linear-gradient(135deg, #4ac4a8, #2a8a7a);
+    border-radius: 3px;
+    box-shadow: 0 0 10px #4ac4a840;
+    flex-shrink: 0;
+  }
+
+  .api-page-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  /* ── 统计卡片 ── */
+  .api-summary {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .api-summary-item {
+    padding: 12px 8px;
+    background: #ffffff;
+    border-radius: 8px;
+    border: 1px solid #e0d8c8;
+    text-align: center;
+    font-size: 0.68rem;
+  }
+  .api-summary-item .val {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #3a8a7a;
+  }
+  .api-summary-item .lbl {
+    font-size: 0.58rem;
+    color: #8a8a7a;
+    margin-top: 2px;
+  }
+
+  /* ── 过滤器 ── */
+  .api-filter-bar {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+  .api-filter-chip {
+    padding: 5px 13px;
+    background: #ffffff;
+    border: 1px solid #d8d4c8;
+    border-radius: 16px;
+    color: #6a6a5a;
+    cursor: pointer;
+    font-size: 0.68rem;
+    font-family: inherit;
+    letter-spacing: 0.3px;
+    transition: all 0.2s;
+    white-space: nowrap;
+    touch-action: manipulation;
+    outline: none;
+  }
+  .api-filter-chip:hover {
+    background: #f0faf4;
+    border-color: #4ac4a840;
+    color: #2a7a6a;
+  }
+  .api-filter-chip.active {
+    background: linear-gradient(135deg, #4ac4a8, #2a8a7a);
+    color: #ffffff;
+    border-color: transparent;
+    font-weight: 600;
+    box-shadow: 0 2px 10px #4ac4a825;
+  }
+
+  /* ── 流分组 ── */
+  .api-flow-group {
+    margin-bottom: 20px;
+    border: 1px solid #e0d8c8;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .api-flow-group-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 14px;
+    background: #f8f5ef;
+    border-bottom: 1px solid #e0d8c8;
+    font-size: 0.72rem;
+    color: #3a8a7a;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .api-flow-group-header:hover {
+    background: #f0ece4;
+  }
+  .api-flow-group-header .flow-chevron {
+    font-size: 0.55rem;
+    transition: transform 0.2s;
+    color: #4ac4a8;
+  }
+  .api-flow-group.flow-collapsed .api-flow-group-body { display: none; }
+  .api-flow-group.flow-collapsed .flow-chevron { transform: rotate(-90deg); }
+  .api-flow-group-header .flow-icon {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4ac4a8, #2a8a7a);
+    color: #fff;
+    font-size: 0.55rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .api-flow-group-header .flow-count {
+    color: #8a8a7a;
+    font-size: 0.6rem;
+    margin-left: auto;
+  }
+
+  .api-flow-group-body {
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  /* ── 日志卡片 ── */
+  .api-log-card {
+    background: #ffffff;
+    border: 1px solid #e0d8c8;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .api-log-card:hover {
+    border-color: #c0d8cc;
+    box-shadow: 0 2px 8px #4ac4a808;
+  }
+  .api-log-card.expanded {
+    border-color: #4ac4a8;
+    box-shadow: 0 2px 14px #4ac4a812;
+  }
+
+  /* 卡片头部 */
+  .api-card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 12px;
+    cursor: pointer;
+    user-select: none;
+    flex-wrap: wrap;
+    min-height: 38px;
+    transition: background 0.15s;
+  }
+  .api-card-header:hover {
+    background: #fafcf8;
+  }
+
+  .api-type-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .badge-conversation { background: #e8faf0; color: #2a7a6a; }
+  .badge-world_narrative,
+  .badge-narrative_outline { background: #dce4f0; color: #3a5a8a; }
+  .badge-narrative_writing { background: #e0e8f0; color: #3a6aaa; }
+  .badge-narrative_parsing { background: #e8ecf4; color: #4a6a9a; }
+  .badge-report { background: #efe8f0; color: #7a4a8a; }
+  .badge-diplomacy { background: #f0f0e0; color: #8a8a3a; }
+  .badge-state_orchestration { background: #f0e8e0; color: #a06030; }
+  .badge-init_world { background: #e8e4f0; color: #5a4a8a; }
+  .badge-combat { background: #f0e0e0; color: #b04040; }
+  .badge-creation_certify { background: #e0f0e8; color: #4a6a5a; }
+  .badge-personal_action { background: #f0e8e0; color: #8a5a30; }
+  .badge-memory_compression { background: #e8e4f0; color: #5a4a8a; }
+  .badge-drive_check { background: #f0e0e8; color: #8a4a6a; }
+  .badge-player_summary { background: #e0e8f0; color: #3a5a8a; }
+  .badge-action_parser { background: #f0f4e8; color: #5a7a3a; }
+
+  /* 短输出内联预览 */
+  .api-compact-preview {
+    padding: 6px 12px 8px;
+    font-size: 0.68rem;
+    color: #6a5a4a;
+    background: #fefcf6;
+    border-bottom: 1px dashed #e0d8c8;
+    line-height: 1.55;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .api-card-name {
+    font-size: 0.72rem;
+    color: #3a3228;
+    font-weight: 600;
+    flex-shrink: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .api-card-stats {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.6rem;
+    color: #8a8a7a;
+    flex-shrink: 0;
+  }
+  .api-card-stats .stat-item {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    white-space: nowrap;
+  }
+  .api-card-stats .stat-val {
+    font-family: 'Consolas', monospace;
+    color: #3a8a7a;
+    font-weight: 600;
+  }
+  .api-dot {
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .dot-ok { background: #4ac4a8; }
+  .dot-err { background: #c06050; }
+
+  .api-card-chevron {
+    color: #c0c0b0;
+    font-size: 0.5rem;
+    transition: transform 0.25s;
+    flex-shrink: 0;
+  }
+  .api-log-card.expanded .api-card-chevron {
+    transform: rotate(180deg);
+  }
+
+  /* 卡片展开体 */
+  .api-card-body {
+    display: none;
+    padding: 0 12px 10px;
+    border-top: 1px solid #e0d8c8;
+    background: #faf8f4;
+  }
+  .api-log-card.expanded .api-card-body {
+    display: block;
+  }
+  .api-card-body .prompt-label {
+    color: #3a8a7a;
+    font-weight: 600;
+    font-size: 0.63rem;
+    margin: 8px 0 3px;
+    letter-spacing: 0.3px;
+  }
+  .api-card-body pre {
+    background: #2a2a32;
+    color: #d4d4c4;
+    font-family: 'Consolas', 'Fira Code', monospace;
+    font-size: 0.58rem;
+    line-height: 1.5;
+    padding: 10px 12px;
+    border-radius: 6px;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .api-card-body .response-text {
+    color: #5a5a4a;
+    font-size: 0.7rem;
+    line-height: 1.65;
+  }
+  .api-card-body .error-text {
+    color: #c06050;
+    font-size: 0.65rem;
+  }
+
+  /* 卡片底部 */
+  .api-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 12px;
+    border-top: 1px solid #e8e4da;
+    font-size: 0.6rem;
+    color: #8a8a7a;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .api-card-footer .game-time {
+    color: #6a8a7a;
+    font-family: 'Consolas', monospace;
+  }
+
+  /* ── 空状态 ── */
+  .api-empty {
+    text-align: center;
+    padding: 48px 20px;
+    color: #b0a898;
+  }
+  .api-empty .empty-icon {
+    font-size: 2.5rem;
+    display: block;
+    margin-bottom: 10px;
+    opacity: 0.4;
+  }
+  .api-empty .empty-text {
+    font-size: 0.85rem;
+    font-style: italic;
+  }
+
+  /* ── 响应式 ── */
+  @media (max-width: 600px) {
+    .api-log-page { padding: 12px 8px 30px; }
+    .api-page-header { padding: 10px 0; }
+    .api-page-title { font-size: 0.9rem; }
+    .api-summary { grid-template-columns: 1fr 1fr; gap: 4px; }
+    .api-summary-item { padding: 8px 6px; }
+    .api-summary-item .val { font-size: 0.9rem; }
+    .api-filter-chip { padding: 5px 10px; font-size: 0.64rem; }
+    .api-flow-group-header { font-size: 0.68rem; padding: 7px 10px; }
+    .api-flow-group-body { padding: 5px 6px; gap: 4px; }
+    .api-card-header { padding: 7px 9px; gap: 5px; }
+    .api-type-badge { font-size: 0.56rem; padding: 2px 6px; }
+    .api-card-name { font-size: 0.68rem; }
+    .api-card-stats { font-size: 0.56rem; gap: 5px; }
+    .api-card-footer { font-size: 0.56rem; padding: 5px 9px; }
+    .api-card-body { padding: 0 8px 8px; }
+    .api-card-body pre { font-size: 0.55rem; padding: 8px 10px; }
+  }
+</style>
+</head>
+<body>
+<div class="api-log-page">
+  <!-- 页头 -->
+  <div class="api-page-header">
+    <div class="api-page-title">青云界 · API 调用日志</div>
+    <div class="api-page-actions">
+      <button class="btn btn-sm btn-danger" id="btn-clear-all">全部清除</button>
+      <button class="btn btn-sm" id="btn-back">返回游戏</button>
+    </div>
+  </div>
+
+  <!-- 统计摘要 -->
+  <div class="api-summary" id="api-summary"></div>
+
+  <!-- 过滤器 -->
+  <div class="api-filter-bar" id="api-filter-bar"></div>
+
+  <!-- 主内容区域 -->
+  <div id="api-content"></div>
+</div>
+
+<script type="module" src="api-log.js"></script>
+</body>
+</html>
